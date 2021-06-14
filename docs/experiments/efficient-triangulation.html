@@ -1,0 +1,181 @@
+
+(intended to be "efficient" compared a previous implementation i did which happens to be present in <a href="https://github.com/Arctenik/astro-snatcher">Astro Snatcher</a>)
+<br><br>
+<button id="clearButton">Clear</button>
+| <button id="triangulateButton">Triangulate</button>
+<br><br>
+<canvas style="border: 1px solid lightgray" id="canvas" width="500" height="400"></canvas>
+
+
+<script>
+
+let clearButton = document.getElementById("clearButton"),
+	triangulateButton = document.getElementById("triangulateButton"),
+	canvas = document.getElementById("canvas"),
+	ctx = canvas.getContext("2d");
+
+let vertices = [];
+
+
+
+triangulateButton.addEventListener("click", () => {
+	let v = vertices.slice();
+	if (windingDirection(v) < 0) v.reverse();
+	
+	let triangles = triangulate(v);
+	
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	
+	ctx.beginPath();
+	v.forEach((p, i) => {
+		ctx[i ? "lineTo" : "moveTo"](...p);
+	});
+	ctx.closePath();
+	ctx.lineWidth = 2;
+	ctx.strokeStyle = "black";
+	ctx.stroke();
+	
+	ctx.beginPath();
+	triangles.forEach(t => {
+		t.forEach((p, i) => {
+			ctx[i ? "lineTo" : "moveTo"](...p);
+		});
+		ctx.closePath();
+	});
+	ctx.lineWidth = 1;
+	ctx.strokeStyle = "black";
+	ctx.stroke();
+});
+
+
+function triangulate(vertices) {
+	let result = [];
+	
+	while (vertices.length > 3) {
+		let done = false,
+			newVertices = vertices.filter((v, i) => {
+				if (done) return true;
+				else {
+					let t = [
+						vertices[(vertices.length + i - 1)%vertices.length],
+						v,
+						vertices[(i + 1)%vertices.length]
+					];
+					
+					if (isConvex(...t)) {
+						for (let v of vertices) {
+							if (!t.includes(v) && pointInTriangle(v, t)) return true;
+						}
+						result.push(t);
+						done = true;
+						return false;
+					} else {
+						return true;
+					}
+				}
+			});
+		
+		if (newVertices.length === vertices.length) throw new Error("Failed to find ear");
+		
+		vertices = newVertices;
+	}
+	
+	return result;
+}
+
+function isConvex(p1, p2, p3) {
+	let s1 = [p1[0] - p2[0], p1[1] - p2[1]],
+		s2 = [p3[0] - p2[0], p3[1] - p2[1]];
+	
+	// cross product of 2 edges; direction relative to angle determines order determines sign
+	return (s1[0]*s2[1] - s1[1]*s2[0]) > 0;
+}
+
+function pointInTriangle(p, t) {
+	for (let i = 0; i < t.length; i++) {
+		let v1 = t[i],
+			v2 = t[(i + 1)%t.length],
+			s = [v2[0] - v1[0], v2[1] - v1[1]],
+			q = [p[0] - v1[0], p[1] - v1[1]];
+		
+		// cross product of point with edge; essentially gives direction of smallest angle, which is equivalent to which side the point is on
+		if ((s[1]*q[0] - s[0]*q[1]) <= 0) return false;
+	}
+	return true;
+}
+
+
+
+clearButton.addEventListener("click", () => {
+	vertices = [];
+	render();
+});
+
+canvas.addEventListener("click", e => {
+	vertices.push([e.offsetX, e.offsetY]);
+	render();
+});
+
+
+function render() {
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	
+	let v = vertices.slice();
+	if (windingDirection(v) < 0) v.reverse();
+	
+	ctx.beginPath();
+	
+	v.forEach(([x, y]) => {
+		ctx.moveTo(x, y);
+		ctx.arc(x, y, 4, 0, 2 * Math.PI);
+		ctx.closePath();
+	});
+	
+	ctx.fillStyle = "black";
+	ctx.fill();
+	
+	v.forEach((v1, i) => {
+		if (i < v.length - 1 || v.length > 2) {
+			drawArrow(v1, v[(i + 1)%v.length], i === v.length - 1 ? "#9cf" : "black");
+		}
+	});
+}
+
+function drawArrow(p1, p2, color) {
+	let line = [p2[0] - p1[0], p2[1] - p1[1]],
+		length = Math.sqrt(line[0]**2 + line[1]**2),
+		unit = [line[0]/length, line[1]/length],
+		offset = unit.map(n => n * 10),
+		start = [p1[0] + offset[0], p1[1] + offset[1]],
+		end = [p2[0] - offset[0], p2[1] - offset[1]],
+		offset2 = unit.map(n => n * 10),
+		perp = [unit[1], -unit[0]].map(n => n * 8),
+		arrow1 = [end[0] - offset[0] - perp[0], end[1] - offset[1] - perp[1]],
+		arrow2 = [end[0] - offset[0] + perp[0], end[1] - offset[1] + perp[1]];
+	
+	ctx.beginPath();
+	
+	ctx.moveTo(...start);
+	ctx.lineTo(...end);
+	
+	ctx.moveTo(...arrow1);
+	ctx.lineTo(...end);
+	ctx.lineTo(...arrow2);
+	
+	ctx.lineWidth = 2;
+	ctx.strokeStyle = color;
+	ctx.stroke();
+}
+
+
+function windingDirection(vertices) {
+	var sum = 0;
+	vertices.forEach(([x1, y1], i) => {
+		var [x2, y2] = vertices[(i + 1)%vertices.length];
+		sum += (x2 - x1) * (y2 + y1);
+	});
+	return Math.sign(sum);
+}
+
+</script>
+

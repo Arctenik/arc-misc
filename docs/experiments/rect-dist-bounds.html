@@ -1,0 +1,95 @@
+
+green = closest distance, red = furthest distance, yellow = closest corner distance
+<br><br>
+<canvas width="500" height="400"></canvas>
+
+
+<script>
+
+let canvas = document.querySelector("canvas"),
+	ctx = canvas.getContext("2d");
+
+let rect = [[100, 200], [150, 300]];
+
+
+canvas.addEventListener("mousemove", e => {
+	render({c: [e.offsetX, e.offsetY]});
+});
+
+canvas.addEventListener("mouseleave", () => render());
+
+
+function render(point) {
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	
+	ctx.strokeStyle = "#000";
+	ctx.strokeRect(rect[0][0], rect[1][0], rect[0][1] - rect[0][0], rect[1][1] - rect[1][0]);
+	
+	if (point !== undefined) {
+		let closestCorner = getClosestCorner(rect, point),
+			cornerDist = getDist(point, {c: closestCorner.map((side, axis) => rect[axis][side])}),
+			minDist = getMinRectDist(rect, point),
+			maxDist = getMaxRectDist(rect, point);
+		
+		ctx.strokeStyle = "#fd0";
+		strokeCircle(...point.c, cornerDist);
+		
+		ctx.strokeStyle = "#0f0";
+		strokeCircle(...point.c, minDist);
+		
+		ctx.strokeStyle = "#f00";
+		strokeCircle(...point.c, maxDist);
+	}
+}
+
+function strokeCircle(x, y, r) {
+	ctx.beginPath();
+	ctx.arc(x, y, r, 0, Math.PI * 2);
+	ctx.closePath();
+	ctx.stroke();
+}
+
+
+function getMinRectDist(rect, point) {
+	let dists = [], boundedDists = [];
+	
+	rect.forEach(([low, high], a) => {
+		dists.push(Math.min(Math.abs(point.c[1 - a] - rect[1 - a][0]), Math.abs(point.c[1 - a] - rect[1 - a][1])));
+		if (low <= point.c[a] && point.c[a] <= high) boundedDists.push(a);
+	});
+	
+	if (boundedDists.length === 0) {
+		return Math.sqrt(dists[0] ** 2 + dists[1] ** 2);
+	} else if (boundedDists.length === 2) {
+		return 0;
+	} else {
+		return dists[boundedDists[0]];
+	}
+}
+
+function getMaxRectDist(rect, point) {
+	return getDist(point, {c: getClosestCorner(rect, point).map((side, axis) => rect[axis][1 - side])});
+}
+
+function getClosestCorner(rect, point) {
+	return rect.map(([low, high], a) => {
+		if (Math.abs(point.c[a] - low) < Math.abs(point.c[a] - high)) {
+			return 0;
+		} else {
+			return 1;
+		}
+	});
+}
+
+function getDist(a, b) {
+	return Math.sqrt((b.c[0] - a.c[0]) ** 2 + (b.c[1] - a.c[1]) ** 2);
+}
+
+
+
+
+
+render();
+
+</script>
+

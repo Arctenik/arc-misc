@@ -1,0 +1,139 @@
+
+
+<style>
+
+body, html {
+	font-family: Arial, sans-serif;
+}
+
+</style>
+
+
+(WASD + shift/space to move, arrow keys to turn)
+<br><br><br>
+Image: <input id="imageInp" type="file">
+<br><br>
+<input id="previewModeInp" type="checkbox" checked> Preview mode
+<br><br>
+<canvas id="canvas"></canvas>
+
+
+<!-- BASIC PREVIEW SHADER -->
+
+<script id="vsBasicScript" type="notjs">
+
+precision mediump float;
+
+attribute vec3 a_pos;
+attribute vec3 a_norm;
+
+uniform float u_viewDist;
+uniform float u_fovRatio;
+uniform float u_aspectRatio;
+uniform vec3 u_cameraPos;
+uniform vec3 u_cameraDir;
+uniform vec3 u_cameraUp;
+uniform vec3 u_cameraRight;
+
+uniform vec3 u_lightPos;
+uniform vec4 u_color;
+
+varying vec4 v_color;
+
+float vproj(vec3 a, vec3 b) {
+	return dot(a, b)/length(b);
+}
+
+vec3 project(vec3 cameraPos) {
+	vec3 relPos = a_pos - cameraPos;
+	vec3 viewPos = vec3(vproj(relPos, u_cameraRight), vproj(relPos, u_cameraUp), vproj(relPos, u_cameraDir));
+	vec2 projScaled = viewPos.xy/abs(viewPos.z) * u_fovRatio;
+	return vec3(projScaled.x, projScaled.y * u_aspectRatio, viewPos.z/u_viewDist);
+}
+
+void main() {
+	gl_Position = vec4(project(u_cameraPos), 1.0);
+	
+	vec3 lightDir = u_lightPos - a_pos;
+	float c = (dot(a_norm, lightDir)/length(a_norm)/length(lightDir) + 1.0)/2.0 * 0.9 + 0.1;
+	v_color = vec4(c, c, c, 1.0) * u_color;
+}
+
+</script>
+
+<script id="fsBasicScript" type="notjs">
+
+precision mediump float;
+
+varying vec4 v_color;
+
+void main() {
+	gl_FragColor = v_color;
+}
+
+</script>
+
+
+<!-- MAGIC EYE SHADER -->
+
+<script id="vsMagicScript" type="notjs">
+
+precision mediump float;
+
+attribute vec3 a_pos;
+
+uniform float u_viewDist;
+uniform float u_fovRatio;
+uniform float u_aspectRatio;
+uniform vec3 u_cameraPos;
+uniform vec3 u_cameraDir;
+uniform vec3 u_cameraUp;
+uniform vec3 u_cameraRight;
+
+uniform float u_side;
+uniform float u_eyesOffset;
+
+varying vec2 v_centerProj;
+
+float vproj(vec3 a, vec3 b) {
+	return dot(a, b)/length(b);
+}
+
+vec3 project(vec3 cameraPos) {
+	vec3 relPos = a_pos - cameraPos;
+	vec3 viewPos = vec3(vproj(relPos, u_cameraRight), vproj(relPos, u_cameraUp), vproj(relPos, u_cameraDir));
+	vec2 projScaled = viewPos.xy/abs(viewPos.z) * u_fovRatio;
+	return vec3(projScaled.x, projScaled.y * u_aspectRatio, viewPos.z/u_viewDist);
+}
+
+void main() {
+	v_centerProj = project(u_cameraPos).xy;
+	vec3 sideCameraPos = vec3(u_cameraPos.x - (u_side * u_eyesOffset), u_cameraPos.yz);
+	vec3 sideProj = project(sideCameraPos);
+	gl_Position = vec4(sideProj.x/2.0 + (0.5 * u_side), sideProj.yz, 1.0);
+}
+
+</script>
+
+<script id="fsMagicScript" type="notjs">
+
+precision mediump float;
+
+uniform sampler2D u_image;
+uniform float u_imageClip;
+
+varying vec2 v_centerProj;
+
+void main() {
+	gl_FragColor = texture2D(u_image, (v_centerProj * u_imageClip + 1.0)/2.0);
+	//gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+}
+
+</script>
+
+
+<script src="../lib/twgl-full.min.js"></script>
+<script src="../lib/pngjs-bundle.js"></script>
+
+<script src="magic-eye-generator.js"></script>
+
