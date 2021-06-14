@@ -1,0 +1,197 @@
+<title>Snow thing</title>
+
+<meta content='user-scalable=0' name='viewport' />
+<style>
+html, body {
+	margin: 0px;
+	padding: 0px;
+}
+</style>
+
+<!-- one of the first js things i made! -->
+
+<div id="options" style="display:none; position:absolute; background-color:#ffffff">
+Snow render mode:
+<select id="renderMode">
+<option value="normal">Normal</option>
+<option value="real">Real</option>
+</select>
+<button onclick="setRenderMode()">Done</button>
+</div>
+<canvas id="canvas" width="800" height="400"></canvas>
+
+<script>
+var canvas = document.getElementById("canvas"),
+	ctx = canvas.getContext("2d"),
+	width = parseInt(canvas.width),
+	height = parseInt(canvas.height),
+	snow = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+	pileWidth = Math.round(width/snow.length),
+	pileHeightMultiplier = 0.5,
+	minFall = 0.5,
+	maxFall = 0.6,
+	minDrift = -0.15,
+	maxDrift = 0.15,
+	snowflakes = [],
+	sizeMultiplier = 2,
+	minSize = 2,
+	maxSize = 5,
+	snowflakeChance = 20,
+	maxHeightDifference = 8,
+	continueTime = 500,
+	renderFunctions = ({
+		"normal": function() {
+			for (i = 0; i < snow.length - 1; i++) {
+				ctx.quadraticCurveTo(pileWidth*(i + 0.5), height - snow[i], pileWidth*(i + 1), height - (snow[i] + (snow[i + 1] - snow[i])/2));
+			}
+			ctx.quadraticCurveTo(pileWidth*(snow.length - 0.5), height - snow[snow.length - 1], pileWidth*(snow.length), height - snow[snow.length - 1]);
+			ctx.lineTo(width, height - snow[snow.length - 1]);
+		},
+		"real": function() {
+			for (i = 0; i < snow.length - 1; i++) {
+				ctx.lineTo(pileWidth*(i + 1), height - snow[i]);
+				ctx.lineTo(pileWidth*(i + 1), height - snow[i + 1]);
+			}
+			ctx.lineTo(width, height - snow[snow.length - 1]);
+		}
+	}),
+	currentRenderFunction = renderFunctions["normal"];
+
+function getRandomArbitrary(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function getRandomInt(min, max) {
+  max += 1;
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function snowflake(x, y, direction, fallSpeed, size) {
+	this.x = x;
+	this.y = y;
+	this.direction = direction;
+	this.fallSpeed = fallSpeed;
+	this.size = size;
+	this.landed = 0;
+}
+
+function randomSnowflake() {
+	var rad = getRandomInt(minSize, maxSize);
+	snowflakes.push(new snowflake(getRandomInt(0, width - 1), -1*rad, getRandomArbitrary(minDrift, maxDrift), getRandomArbitrary(minFall, maxFall), rad));
+}
+
+function circle(x, y, radius) {
+	ctx.beginPath();
+	ctx.arc(x, y, radius, 0, 2 * Math.PI);
+	ctx.closePath();
+	ctx.fill();
+}
+
+function updateSnowflakes() {
+	var toDelete = [];
+	snowflakes.forEach(function(flake, index) {
+		if (flake.y >= height - snow[Math.floor(flake.x/pileWidth)] && !flake.landed) {
+			snow[Math.floor(flake.x/pileWidth)] += flake.size*sizeMultiplier*pileHeightMultiplier;
+			flake.landed = Date.now();
+		} else if (flake.x + flake.size < 0 || flake.x - flake.size >= width || (flake.landed && Date.now() - flake.landed >= continueTime)) {
+			toDelete.push(index);
+		} else {
+			flake.y += flake.fallSpeed;
+			flake.x += flake.direction;
+			circle(flake.x, flake.y, flake.size);
+		}
+	});
+	for (i = toDelete.length - 1; i >= 0; i--) {
+		snowflakes.splice(toDelete[i], 1);
+	}
+}
+
+function updateSnow() {
+	var tooHigh = [];
+	snow.forEach(function(pile, idx) {
+		if (pile - snow[idx - 1] > maxHeightDifference || pile - snow[idx + 1] > maxHeightDifference) {
+			tooHigh.push(idx);
+		}
+	});
+	tooHigh.forEach(function(idx) {
+		if (idx != 0 && snow[idx] - snow[idx - 1] > maxHeightDifference) {
+			snow[idx] -= 1;
+			snow[idx - 1] += 1;
+		}
+		if (idx != snow.length && snow[idx] - snow[idx + 1] > maxHeightDifference) {
+		snow[idx] -= 1;
+		snow[idx + 1] += 1;
+		}
+	});
+
+	ctx.beginPath();
+	ctx.moveTo(0, height - snow[0]);
+
+	currentRenderFunction();
+
+	/*
+	ctx.lineTo(pileWidth*0.5, height - snow[0]);
+	for (i = 0; i < snow.length - 1; i++) {
+	ctx.bezierCurveTo(pileWidth*(i + 1), height - snow[i], pileWidth*(i + 1), height - snow[i + 1],  pileWidth*(i + 1.5), height - snow[i + 1]);
+	}
+	ctx.lineTo(width, height - snow[snow.length - 1]);
+	*/
+
+	ctx.lineTo(width, height);
+	ctx.lineTo(0, height);
+	ctx.closePath();
+	ctx.fill();
+}
+
+function update() {
+	if (!getRandomInt(0, snowflakeChance - 1)) {
+		randomSnowflake();
+	}
+	ctx.fillStyle = "#80bfff";
+	ctx.fillRect(0, 0, width, height);
+	ctx.fillStyle = "#ffffff";
+	updateSnowflakes();
+	updateSnow();
+}
+
+function toggleOptions(event) {
+	if (event.keyCode == 32) {
+		if (document.getElementById("options").style.display == "none") {
+			document.getElementById("options").style.display = "inline";
+		} else {
+			document.getElementById("options").style.display = "none";
+		}
+	}
+}
+document.body.addEventListener("keyup", toggleOptions);
+
+function setRenderMode() {
+	toggleOptions({"keyCode": 32});
+	currentRenderFunction = renderFunctions[document.getElementById("renderMode").value];
+}
+
+window.addEventListener("resize", setSize);
+function setSize() {
+	width = window.innerWidth;
+	height = window.innerHeight;
+	canvas.width = width;
+	canvas.height = height;
+	pileWidth = Math.round(width/snow.length);
+}
+setSize();
+
+setInterval(update, 10);
+
+/*
+function changeSnow(event) {
+if (event.clientY < height/2) {
+snow[Math.floor(event.clientX/pileWidth)] += 50;
+} else {
+snow[Math.floor(event.clientX/pileWidth)] -= 50;
+}
+updateSnow();
+}
+
+canvas.addEventListener("click", changeSnow);
+*/
+</script>
