@@ -1,0 +1,87 @@
+@RULE BackFlip5S
+
+A cellular automaton simulating BackFlip: https://esolangs.org/wiki/BackFlip
+Each symbol in the program is represented as a pattern in a 3x3 square of cells
+Symbols must spaced with at least 2 cells between them
+Technically 6-state despite the name, but state 5 is for annotation rather than programming
+States 1 and 2 create the instuction pointer, and states 3 and 4 create mirrors and arrows
+
+Example program pattern:
+x = 22, y = 17, rule = BackFlip5S
+5.2E3.2E3.2E3.2E$5.2E3.2E3.2E3.2E$7.3C$BA5.3C$7.3D$5.2E3.2E3.2E3.2E$
+5.2E3.2E3.2E3.2E$12.3C$12.3C$12.3D$5.2E3.2E3.2E3.2E$5.2E3.2E3.2E3.2E$
+7.2CD2.C.D2.D2C$7.2CD3.D3.D2C$7.2CD2.D.C2.D2C$5.2E3.2E3.2E3.2E$5.2E3.
+2E3.2E3.2E!
+
+Which is equivalent to this BackFlip program:
+V  
+ V 
+>/<
+
+
+@TABLE
+n_states:6
+neighborhood:Moore
+symmetries:rotate4
+var x = {0, 5}
+var a = {0,1,2,3,4,5}
+var b = {3, 4}
+var c = {2, 3, 4}
+var d = {x, 2}
+var xv = {x}
+var xw = {x}
+var xx = {x}
+var xy = {x}
+var xz = {x}
+var aa = {a}
+var ab = {a}
+var ac = {a}
+var ad = {a}
+var ae = {a}
+var af = {a}
+var ag = {a}
+var ah = {a}
+var ba = {b}
+var bb = {b}
+var bc = {b}
+var bd = {b}
+var be = {b}
+var bf = {b}
+var bg = {b}
+var bh = {b}
+var ca = {c}
+var cb = {c}
+var da = {d}
+var db = {d}
+#mirrors
+0,ba,xw,bb,xx,1,xy,bc,xz,1
+4,xv,ba,xw,bb,1,bc,xx,bd,1
+0,4,xw,xx,xy,3,2,1,xz,1
+0,4,xw,1,2,3,xx,xy,xz,1
+2,xv,ba,xw,bb,xx,bc,1,bd,4
+3,xv,xw,da,1,db,xx,xy,xz,4
+4,xv,xw,da,1,db,xx,xy,xz,3
+#pointer movement (normal + arrows)
+1,aa,ab,ac,ad,ae,af,ag,ah,2
+2,1,3,4,xv,xw,xx,4,3,1
+2,1,xv,4,3,3,3,4,xw,4
+2,1,ba,bb,xv,xw,xx,bc,bd,4
+2,1,ba,bb,bc,bd,be,bf,bg,3
+2,1,xv,ba,bb,bc,bd,be,xw,3
+2,aa,ab,ac,ad,ae,af,ag,ah,0
+ba,bb,bc,bd,xv,1,xw,be,bf,1
+3,ba,bb,bc,bd,1,bf,bg,bh,1
+4,xv,xw,4,ca,1,cb,4,xx,1
+0,aa,ab,xw,xx,1,xy,xz,ac,1
+0,aa,ab,xv,ba,1,bb,xw,ac,1
+#arrows
+ba,bb,1,2,xv,xw,xx,xy,xz,4
+ba,bb,xv,xw,xx,xy,xz,2,1,4
+4,xv,xw,4,1,3,xx,xy,xz,3
+4,xv,xw,xx,xy,3,1,4,xz,3
+@COLORS
+1 239 87 4
+2 248 219 22
+3 7 119 224
+4 27 213 246
+5 100 100 100

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>BackFlip interpreter</title>
+
+		<style>
+
+		body, html {
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: Arial, sans-serif;
+		}
+
+		input[type=number] {
+			width: 4em;
+		}
+
+		#page {
+			display: flex;
+			flex-direction: column;
+			margin: 0.5em;
+			width: calc(100vw - 1em);
+			height: calc(100vh - 1em);
+		}
+
+		#programContainer {
+			width: 100%;
+			overflow: auto;
+		}
+
+		/*
+		#programElem {
+			display: inline-block;
+			font-family: monospace;
+			white-space: pre;
+			border: 1px solid #eee;
+			padding: 0.5em;
+			color: black;
+			background: white;
+			font-size: 13;
+		}
+		*/
+
+		#canvas {
+			border: 1px solid #eee;
+			padding: 0.5em;
+			image-rendering: pixelated;
+		}
+
+		#programContainer {
+			margin-top: 1em;
+		}
+
+		/*
+		#programElem > * {
+			padding: 0 0.1em;
+		}
+
+		.pointer {
+			color: white;
+			background: black;
+		}
+
+		.pointer.right, .pointer.down {
+			border-bottom-right-radius: 0.5em;
+		}
+
+		.pointer.down, .pointer.left {
+			border-bottom-left-radius: 0.5em;
+		}
+
+		.pointer.left, .pointer.up {
+			border-top-left-radius: 0.5em;
+		}
+
+		.pointer.up, .pointer.right {
+			border-top-right-radius: 0.5em;
+		}
+		*/
+
+		</style>
+	</head>
+	<body>
+		<div id="page">
+			<div>
+				An interpreter for the basic version of the esoteric programming language <a href="https://esolangs.org/wiki/BackFlip">BackFlip</a>. Tested on recent versions of Chrome and Firefox. Also of interest may be <a href="https://github.com/Arctenik/arc-misc/blob/main/docs/backflip/BackFlip5S.rule">this cellular automaton rule file</a> and <a href="https://github.com/Arctenik/arc-misc/tree/main/docs/backflip/programs">my BackFlip programs</a>.
+				<br><br>
+				Paste program: | <button id="exportButton">Export state</button>
+				<br><br>
+				<textarea id="programInp"></textarea>
+				<br><br><br>
+				<button id="backButton">Back</button> by <input id="backAmountInp" type="number" value="1"> |
+				<button id="stepButton">Step</button> |
+				<button id="runButton">Run</button> |
+				Step size: <input id="stepSizeInp" type="number" value="1"> |
+				Delay: <input id="delayInp" type="number" value="10"> |
+				Frame: <span id="frameIndexElem">0</span> |
+				Scale: <input id="scaleInp" type="number" value="4">
+			</div>
+			<div id="programContainer">
+				<!-- <div id="programElem"></div> -->
+				<canvas id="canvas"></canvas>
+			</div>
+		</div>
+
+
+		<script src="backflip.js"></script>
+	</body>
+</html>
