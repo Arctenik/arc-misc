@@ -2,7 +2,9 @@
 <html>
 	<head>
 		<title>BackFlip interpreter</title>
-
+		
+		<meta name="viewport" content="width=device-width">
+		
 		<style>
 
 		body, html {
@@ -25,24 +27,76 @@
 			width: calc(100vw - 1em);
 			height: calc(100vh - 1em);
 		}
+		
+		#topControlsElem {
+			margin-top: 1.5em;
+			display: flex;
+		}
+		
+		#programInp {
+			margin-top: 0.5em;
+		}
+		
+		#outputPanel {
+			display: flex;
+		}
+		
+		#outputElem {
+			border: 1px solid lightgray;
+			padding: 0.5em;
+			overflow: auto;
+			white-space: pre;
+		}
+		
+		@media all and (orientation: landscape) {
+			#topControlsElem {
+				flex-direction: row;
+				width: 100%;
+			}
+			
+			#programInputPanel {
+				max-width: 40%;
+				flex: 1;
+			}
+			
+			#outputPanel {
+				flex: 1;
+				max-width: 40em;
+				flex-direction: column;
+			}
+			
+			#outputElem {
+				margin-top: 0.5em;
+				height: 3em;
+			}
+		}
+		
+		@media all and (orientation: portrait) {
+			#topControlsElem {
+				flex-direction: column;
+			}
+			
+			#outputPanel {
+				margin-top: 1em;
+				align-items: center;
+			}
+			
+			#outputElem {
+				flex: 1;
+				margin-left: 0.6em;
+				height: 2.4em;
+			}
+		}
+		
+		#controlsBar {
+			margin-top: 1.5em;
+			line-height: 1.5;
+		}
 
 		#programContainer {
 			width: 100%;
 			overflow: auto;
 		}
-
-		/*
-		#programElem {
-			display: inline-block;
-			font-family: monospace;
-			white-space: pre;
-			border: 1px solid #eee;
-			padding: 0.5em;
-			color: black;
-			background: white;
-			font-size: 13;
-		}
-		*/
 
 		#canvas {
 			border: 1px solid #eee;
@@ -54,59 +108,42 @@
 			margin-top: 1em;
 		}
 
-		/*
-		#programElem > * {
-			padding: 0 0.1em;
-		}
-
-		.pointer {
-			color: white;
-			background: black;
-		}
-
-		.pointer.right, .pointer.down {
-			border-bottom-right-radius: 0.5em;
-		}
-
-		.pointer.down, .pointer.left {
-			border-bottom-left-radius: 0.5em;
-		}
-
-		.pointer.left, .pointer.up {
-			border-top-left-radius: 0.5em;
-		}
-
-		.pointer.up, .pointer.right {
-			border-top-right-radius: 0.5em;
-		}
-		*/
-
 		</style>
+		
+		
+		<script src="backflip.js"></script>
 	</head>
 	<body>
 		<div id="page">
 			<div>
-				An interpreter for the basic version of the esoteric programming language <a href="https://esolangs.org/wiki/BackFlip">BackFlip</a>. Tested on recent versions of Chrome and Firefox. Also of interest may be <a href="https://github.com/Arctenik/arc-misc/blob/main/docs/backflip/BackFlip5S.rule">this cellular automaton rule file</a> and <a href="https://github.com/Arctenik/arc-misc/tree/main/docs/backflip/programs">my BackFlip programs</a>.
-				<br><br>
-				Paste program: | <button id="exportButton">Export state</button>
-				<br><br>
-				<textarea id="programInp"></textarea>
-				<br><br><br>
-				<button id="backButton">Back</button> by <input id="backAmountInp" type="number" value="1"> |
+				An interpreter for the esoteric programming language <a href="https://esolangs.org/wiki/BackFlip">BackFlip</a> (including the output extension). Tested on recent versions of Chrome and Firefox. Also of interest may be <a href="https://github.com/Arctenik/arc-misc/blob/main/docs/backflip/BackFlip5S.rule">this cellular automaton rule file</a> and <a href="https://github.com/Arctenik/arc-misc/tree/main/docs/backflip/programs">my BackFlip programs</a>.
+			</div>
+			<div id="topControlsElem">
+				<div id="programInputPanel">
+					Paste program below / <button id="exportButton">Export state</button>
+					<br>
+					<textarea id="programInp"></textarea>
+				</div>
+				<div id="outputPanel">
+					<div>Output:</div>
+					<div id="outputElem"></div>
+				</div>
+			</div>
+			<div id="controlsBar">
+				<button id="backButton">Back</button> by <input id="backAmountInp" type="number" value="1" min="1"> |
 				<button id="stepButton">Step</button> |
 				<button id="runButton">Run</button> |
-				Step size: <input id="stepSizeInp" type="number" value="1"> |
-				Delay: <input id="delayInp" type="number" value="10"> |
+				Step size: <input id="stepSizeInp" type="number" value="1" min="1"> |
+				Delay: <input id="delayInp" type="number" value="100" min="1"> |
 				Frame: <span id="frameIndexElem">0</span> |
-				Scale: <input id="scaleInp" type="number" value="4">
+				Scale: <input id="scaleInp" type="number" value="3">
 			</div>
 			<div id="programContainer">
-				<!-- <div id="programElem"></div> -->
 				<canvas id="canvas"></canvas>
 			</div>
 		</div>
 
 
-		<script src="backflip.js"></script>
+		<script src="backflip-gui.js"></script>
 	</body>
 </html>

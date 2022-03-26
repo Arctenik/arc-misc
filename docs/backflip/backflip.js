@@ -1,231 +1,412 @@
-
-
-let programInp = document.getElementById("programInp"),
-	exportButton = document.getElementById("exportButton"),
-	backButton = document.getElementById("backButton"),
-	backAmountInp = document.getElementById("backAmountInp"),
-	stepButton = document.getElementById("stepButton"),
-	runButton = document.getElementById("runButton"),
-	stepSizeInp = document.getElementById("stepSizeInp"),
-	delayInp = document.getElementById("delayInp"),
-	frameIndexElem = document.getElementById("frameIndexElem"),
-	scaleInp = document.getElementById("scaleInp"),
-	ctx = document.getElementById("canvas").getContext("2d");
-
-let program,
-	history,
-	x, y, dir,
-	runInterval = null,
-	frame;
-
-
-programInp.addEventListener("change", () => {
-	if (programInp.value) {
-		program = programInp.value.split(/\r\n|[\r\n]/);
-		programInp.value = "";
-		program = program.map(line => [...(line.length < program[0].length ? line.padEnd(program[0].length, " ") : line.substring(0, program[0].length))]);
-		history = [];
-		x = 0;
-		y = 0;
-		dir = "right";
-		frame = 0;
-		ctx.canvas.width = program[0].length * 5;
-		ctx.canvas.height = program.length * 5;
-		ctx.canvas.style.width = (ctx.canvas.width * scaleInp.value) + "px";
-		for (let y = 0; y < program.length; y++) {
-			for (let x = 0; x < program[0].length; x++) {
-				renderChar(x, y);
+(function(cb) {
+	
+	let transitionsSideA = [
+			["right", "r"], ["right", "d"], ["right", "l"], ["right", "u"], ["right", "ru"], ["right", "rd"],
+			["down", "r"],  ["down", "d"],  ["down", "l"],  ["down", "u"],  ["down", "ru"],  ["down", "rd"],
+			["left", "r"],  ["left", "d"],  ["left", "l"],  ["left", "u"],  ["left", "ru"],  ["left", "rd"],
+			["up", "r"],    ["up", "d"],    ["up", "l"],    ["up", "u"],    ["up", "ru"],    ["up", "rd"]
+		],
+		transitionsSideB = [
+			["right", "l"], ["down", "l"],  ["left", "l"],  ["up", "l"],    ["up", "rd"],    ["down", "ru"],
+			["right", "u"], ["down", "u"],  ["left", "u"],  ["up", "u"],    ["left", "rd"],  ["right", "ru"],
+			["right", "r"], ["down", "r"],  ["left", "r"],  ["up", "r"],    ["down", "rd"],  ["up", "ru"],
+			["right", "d"], ["down", "d"],  ["left", "d"],  ["up", "d"],    ["right", "rd"], ["left", "ru"]
+		],
+		transitionsA = {},
+		transitionsB = {};
+	
+	transitionsSideA.forEach(([da, sa], i) => {
+		let [db, sb] = transitionsSideB[i];
+		(transitionsA[da] || (transitionsA[da] = {}))[sa] = [db, sb];
+		(transitionsB[db] || (transitionsB[db] = {}))[sb] = [da, sa];
+	});
+	
+	
+	function BackFlip(text, opts) {
+		Object.assign(this, applyDefaults(opts, {
+			backSize: 1,
+			stepSize: 1,
+			delay: 100,
+			fgColor: "black",
+			bgColor: "white",
+			widthMode: "error", // "error", "truncate", "pad"
+			doOutput: true,
+			output: s => console.log(s),
+			unoutput: null,
+			unknownSymbolMode: "ignore", // "ignore", "rebound", "error"
+			symbols: {
+				r: ">",
+				d: "Vv",
+				l: "<",
+				u: "^",
+				ru: "/",
+				rd: "\\",
+				nop: " "
+			},
+			outputSymbols: {
+				"0": "0",
+				"1": "1",
+				"2": "2",
+				"3": "3",
+				"4": "4",
+				"5": "5",
+				"6": "6",
+				"7": "7",
+				"8": "8",
+				"9": "9",
+				"N": "\n"
+			},
+			font: {
+				">": " # "
+				   + "  #"
+				   + " # ",
+				
+				"V": "   "
+				   + "# #"
+				   + " # ",
+				
+				"v": "   "
+				   + "# #"
+				   + " # ",
+				
+				"<": " # "
+				   + "#  "
+				   + " # ",
+				
+				"^": " # "
+				   + "# #"
+				   + "   ",
+				
+				"/": "  #"
+				   + " # "
+				   + "#  ",
+				
+				"\\":"#  "
+					+" # "
+					+"  #",
+				
+				"0": "###"
+				   + "# #"
+				   + "###",
+				
+				"1": "## "
+				   + " # "
+				   + "###",
+				
+				"2": "## "
+				   + " # "
+				   + " ##",
+				
+				"3": "###"
+				   + " ##"
+				   + "###",
+				
+				"4": "# #"
+				   + "###"
+				   + "  #",
+				
+				"5": " ##"
+				   + " # "
+				   + "## ",
+				
+				"6": "#  "
+				   + "## "
+				   + "## ",
+				
+				"7": " ##"
+				   + "  #"
+				   + "  #",
+				
+				"8": " ##"
+				   + " ##"
+				   + " ##",
+				
+				"9": " ##"
+				   + " ##"
+				   + "  #",
+				
+				"N": "## "
+				   + "# #"
+				   + "# #",
+				
+				" ": "   "
+				   + "   "
+				   + "   ",
+				
+				"..":"###"
+					+"###"
+					+"###"
+			}
+		}));
+		
+		this.frame = 0;
+		this.running = false;
+		this.stopping = false;
+		
+		let lines = text.split(/\r\n|[\r\n]/),
+			maxWidth = lines.reduce((max, line) => Math.max(max, line.length), -Infinity);
+		
+		if (this.widthMode === "error") {
+			if (maxWidth > lines[0].length) throw new Error("First line shorter than subsequent lines");
+		} else if (this.widthMode === "truncate") {
+			lines = lines.map(l => l.substring(0, lines[0].length));
+			maxWidth = lines[0].length;
+		}
+		
+		this.program = lines.map(l => Array.from(l.padEnd(maxWidth, this.symbols.nop[0])));
+		this.x = 0;
+		this.y = 0;
+		this.dir = "right";
+		this.frame = 0;
+	}
+	
+	BackFlip.prototype = {
+		getText() {
+			return this.program.map(l => l.join("")).join("\n");
+		},
+		stopRunning() {
+			if (this.getRunning()) this.toggleRun();
+		},
+		getRunning() {
+			return this.running && !this.stopping;
+		},
+		toggleRun(ctx, cbs) {
+			if (this.running && !this.stopping) {
+				this.stopping = true;
+				return false;
+			} else if (this.stopping) {
+				this.stopping = false;
+				return true;
+			} else {
+				let lastFrame,
+					func = t => {
+						if (this.stopping) {
+							this.finishStop(cbs);
+							return;
+						}
+						let updated = false,
+							halted = false;
+						
+						if (lastFrame) {
+							let d = t - lastFrame,
+								changedCoords = new Set(),
+								frameStart = Date.now();
+							for (let i = this.delay; i <= d; i += this.delay) {
+								let c = this.bigStep(1, ctx);
+								if (c) {
+									for (let v of c) changedCoords.add(v);
+								} else {
+									halted = true;
+								}
+								if (Date.now() - frameStart > d) break; // idk how good this is for managing framerate but it seems to kind of work?
+							}
+							if (d >= this.delay) updated = true;
+							for (v of changedCoords) this.renderPos(ctx, v);
+						} else {
+							halted = !this.bigStep(1, ctx);
+							updated = true;
+						}
+						if (updated) {
+							if (cbs?.update) cbs.update();
+							lastFrame = t;
+						}
+						if (halted) this.toggleRun();
+						if (this.getRunning()) requestAnimationFrame(func);
+						else this.finishStop(cbs);
+					};
+				
+				this.running = true;
+				
+				requestAnimationFrame(func);
+				
+				return true;
+			}
+		},
+		finishStop(cbs) {
+			this.running = false;
+			this.stopping = false;
+			if (cbs?.stop) cbs.stop();
+		},
+		bigStep(stepDir = 1, ctx) {
+			let size = stepDir > 0 ? this.stepSize : this.backSize,
+				changedCoords = new Set();
+			
+			for (let i = 0; i < size; i++) {
+				let c = this.step(stepDir);
+				if (c) c.forEach(v => changedCoords.add(v));
+				else break;
+			};
+			
+			if (ctx) {
+				for (let v of changedCoords) {
+					this.renderPos(ctx, v);
+				}
+			}
+			
+			return changedCoords.size > 0 ? changedCoords : false;
+		},
+		step(stepDir = 1, ctx) {
+			let moved = false,
+				prevX = this.x,
+				prevY = this.y;
+			
+			if (stepDir < 0 && (this.inProgram() || this.facingProgram(stepDir))) {
+				this.move(stepDir);
+				moved = true;
+			}
+			
+			if (this.inProgram()) {
+				let c = this.program[this.y][this.x],
+					command,
+					output = this.outputSymbols[c];
+				
+				for (let name in this.symbols) {
+					if (this.symbols[name].includes(c)) {
+						command = name;
+						break;
+					}
+				}
+				
+				if (command === undefined && output === undefined) {
+					if (this.unknownSymbolMode === "error") {
+						throw new Error("Invalid character " + JSON.stringify(c));
+					} else if (this.unknownSymbolMode === "rebound") {
+						command = "rebound";
+					}
+				}
+				
+				let newState = (stepDir < 0 ? transitionsB : transitionsA)[this.dir]?.[command];
+				
+				if (newState) {
+					this.program[this.y][this.x] = this.symbols[newState[1]][0];
+					this.dir = newState[0];
+				} else if (command === "rebound" || output !== undefined) {
+					this.dir = ({"right": "left", "down": "up", "left": "right", "up": "down"})[this.dir];
+					if (output !== undefined) {
+						if (stepDir > 0) {
+							if (this.output) this.output(output);
+						} else {
+							if (this.unoutput) this.unoutput(output);
+						}
+					}
+				}
+				
+				if (stepDir > 0) {
+					this.move(stepDir);
+					moved = true;
+				}
+			} else if (this.facingProgram(stepDir) && stepDir > 0) {
+				this.move(stepDir);
+				moved = true;
+			}
+			
+			if (moved) {
+				if (ctx) {
+					this.renderPos(ctx, prevX, prevY);
+					this.renderPos(ctx, this.x, this.y);
+				}
+				
+				this.frame += stepDir;
+				
+				let result = [];
+				if (this.inProgram(prevX, prevY)) result.push(prevY * this.program[0].length + prevX);
+				if (this.inProgram(this.x, this.y)) result.push(this.y * this.program[0].length + this.x);
+				return result;
+			} else {
+				return false;
+			}
+		},
+		move(stepDir) {
+			if (this.dir === "right") this.x += stepDir;
+			else if (this.dir === "down") this.y += stepDir;
+			else if (this.dir === "left") this.x -= stepDir;
+			else if (this.dir === "up") this.y -= stepDir;
+		},
+		inProgram(qx = this.x, qy = this.y) {
+			return 0 <= qx && qx < this.program[0].length && 0 <= qy && qy < this.program.length;
+		},
+		facingProgram(stepDir = 1) {
+			if (this.x < 0) return stepDir > 0 ? this.dir === "right" : this.dir === "left";
+			if (this.x >= this.program[0].length) return stepDir > 0 ? this.dir === "left" : this.dir === "right";
+			if (this.y < 0) return stepDir > 0 ? this.dir === "down" : this.dir === "up";
+			if (this.y >= this.program.length) return stepDir > 0 ? this.dir === "up" : this.dir === "down";
+		},
+		render(ctx, scale) {
+			ctx.canvas.width = this.program[0].length * 5;
+			ctx.canvas.height = this.program.length * 5;
+			if (scale !== undefined) {
+				ctx.canvas.style.width = (ctx.canvas.width * scale) + "px";
+			}
+			for (let y = 0; y < this.program.length; y++) {
+				for (let x = 0; x < this.program[0].length; x++) {
+					this.renderPos(ctx, x, y);
+				}
+			}
+		},
+		renderPos(ctx, x, y) {
+			if (y === undefined) {
+				let v = x;
+				x = v%this.program[0].length;
+				y = (v - x)/this.program[0].length;
+			}
+			if (this.inProgram(x, y)) {
+				let glyph = this.font[this.program[y][x]] || this.font[".."],
+					rx = x * 5,
+					ry = y * 5;
+				
+				ctx.clearRect(rx, ry, 5, 5);
+				
+				let inverse = false;
+				
+				if (this.x === x && this.y === y) {
+					inverse = true;
+					ctx.fillStyle = this.fgColor;
+					ctx.fillRect(rx + 1, ry, 3, 1);
+					ctx.fillRect(rx + 1, ry + 4, 3, 1);
+					ctx.fillRect(rx, ry + 1, 1, 3);
+					ctx.fillRect(rx + 4, ry + 1, 1, 3);
+					ctx.fillStyle = this.bgColor;
+					ctx.fillStyle = (this.dir === "left" || this.dir === "up") ? this.fgColor : this.bgColor;
+					ctx.fillRect(rx + 4, ry + 4, 1, 1);
+					ctx.fillStyle = (this.dir === "right" || this.dir === "up") ? this.fgColor : this.bgColor;
+					ctx.fillRect(rx, ry + 4, 1, 1);
+					ctx.fillStyle = (this.dir === "right" || this.dir === "down") ? this.fgColor : this.bgColor;
+					ctx.fillRect(rx, ry, 1, 1);
+					ctx.fillStyle = (this.dir === "left" || this.dir === "down") ? this.fgColor : this.bgColor;
+					ctx.fillRect(rx + 4, ry, 1, 1);
+				}
+				
+				for (let py = 0; py < 3; py++) {
+					for (let px = 0; px < 3; px++) {
+						if ((glyph[py * 3 + px] !== " ") ^ inverse) {
+							ctx.fillStyle = this.fgColor;
+						} else {
+							ctx.fillStyle = this.bgColor;
+						}
+						ctx.fillRect(rx + 1 + px, ry + 1 + py, 1, 1);
+					}
+				}
 			}
 		}
-	}
-});
-
-exportButton.addEventListener("click", () => {
-	programInp.value = program.map(l => l.join("")).join("\n");
-	programInp.focus();
-	programInp.select();
-});
-
-backButton.addEventListener("click", () => {
-	let amount = parseInt(backAmountInp.value);
-	for (let i = 0; i < amount && history.length; i++) {
-		let info = history.pop();
-		let prevX = x, prevY = y;
-		if (info.x !== undefined) x = info.x;
-		if (info.y !== undefined) y = info.y;
-		if (info.dir !== undefined) dir = info.dir;
-		if (info.char !== undefined) {
-			program[info.charPos[1]][info.charPos[0]] = info.char;
-		}
-		if (inProgram(prevX, prevY)) renderChar(prevX, prevY);
-		if (!(x === prevX && y === prevY)) renderChar(x, y);
-		frameIndexElem.textContent = --frame;
-	}
-});
-
-stepButton.addEventListener("click", () => {
-	if (runInterval !== null) {
-		stopRunning();
-	}
-	doBigStep();
-});
-
-runButton.addEventListener("click", () => {
-	if (runInterval === null) {
-		runButton.textContent = "Stop";
-		runInterval = setInterval(() => {
-			doBigStep();
-			if (!inProgram()) {
-				stopRunning();
+	};
+	
+	
+	function applyDefaults(obj, defaults) {
+		let result = Object.assign({}, obj);
+		for (let [k, d] of Object.entries(defaults)) {
+			if (result[k] === undefined) {
+				result[k] = d;
+			} else if (d && typeof d === "object") {
+				result[k] = applyDefaults(result[k], d);
 			}
-		}, parseFloat(delayInp.value));
-	} else {
-		stopRunning();
+		}
+		return result;
 	}
+	
+	
+	cb(BackFlip);
+	
+})(b => {
+	if (typeof module === "undefined") BackFlip = b;
+	else module.exports = b;
 });
-
-scaleInp.addEventListener("change", () => {
-	ctx.canvas.style.width = (ctx.canvas.width * scaleInp.value) + "px";
-});
-
-
-function stopRunning() {
-	clearInterval(runInterval);
-	runInterval = null;
-	runButton.textContent = "Run";
-}
-
-function doBigStep() {
-	let amount = parseInt(stepSizeInp.value);
-	for (let i = 0; i < amount && inProgram(); i++) {
-		step();
-	}
-}
-
-function step() {
-	let prevX = x, prevY = y;
-	
-	let c = program[y][x].toLowerCase(),
-		op = {};
-	
-	if ("\\/".includes(c)) {
-		op.char = c;
-		op.charPos = [x, y];
-		program[y][x] = c === "\\" ? "/" : "\\";
-		let cdir = dir === "left" || dir === "up" ? (c === "\\" ? -1 : 1) : (c === "\\" ? 1 : -1),
-			newDir = dir === "left" || dir === "right" ? (cdir === 1 ? "down" : "up") : (cdir === 1 ? "right" : "left");
-		if (newDir === "left" || newDir === "right") {
-			op.x = x;
-			x += cdir;
-		} else {
-			op.y = y;
-			y += cdir;
-		}
-		op.dir = dir;
-		dir = newDir;
-	} else if (">v<^".includes(c)) {
-		op.char = c;
-		op.charPos = [x, y];
-		program[y][x] = ({right: "<", down: "^", left: ">", up: "V"})[dir];
-		if (c === ">") {
-			op.x = x;
-			x += 1;
-		} else if (c === "v") {
-			op.y = y;
-			y += 1;
-		} else if (c === "<") {
-			op.x = x;
-			x -= 1;
-		} else if (c === "^") {
-			op.y = y;
-			y -= 1;
-		}
-		op.dir = dir;
-		dir = ({">": "right", "v": "down", "<": "left", "^": "up"})[c];
-	} else {
-		if (dir === "right") {
-			op.x = x;
-			x += 1;
-		} else if (dir === "down") {
-			op.y = y;
-			y += 1;
-		} else if (dir === "left") {
-			op.x = x;
-			x -= 1;
-		} else if (dir === "up") {
-			op.y = y;
-			y -= 1;
-		}
-	}
-	
-	renderChar(prevX, prevY);
-	if (inProgram() && !(prevX === x && prevY === y)) renderChar(x, y);
-	
-	frameIndexElem.textContent = ++frame;
-	
-	history.push(op);
-}
-
-function inProgram(qx = x, qy = y) {
-	return 0 <= qx && qx < program[0].length && 0 <= qy && qy < program.length;
-}
-
-function renderChar(cx, cy) {
-	let px = cx * 5,
-		py = cy * 5,
-		bg, fg;
-	
-	if (cx === x && cy === y) {
-		ctx.fillStyle = "black";
-		ctx.fillRect(px, py, 5, 5);
-		ctx.fillStyle = "white";
-		if (dir === "right" || dir === "down") ctx.fillRect(px + 4, py + 4, 1, 1);
-		if (dir === "left" || dir === "down") ctx.fillRect(px, py + 4, 1, 1);
-		if (dir === "left" || dir === "up") ctx.fillRect(px, py, 1, 1);
-		if (dir === "right" || dir === "up") ctx.fillRect(px + 4, py, 1, 1);
-		bg = "black";
-		fg = "white";
-	} else {
-		ctx.fillStyle = "white";
-		ctx.fillRect(px, py, 5, 5);
-		bg = "white";
-		fg = "black";
-	}
-	
-	let c = program[cy][cx].toUpperCase();
-	
-	ctx.fillStyle = fg;
-	
-	if (c === "\\") {
-		ctx.fillRect(px + 1, py + 1, 1, 1);
-		ctx.fillRect(px + 2, py + 2, 1, 1);
-		ctx.fillRect(px + 3, py + 3, 1, 1);
-	} else if (c === "/") {
-		ctx.fillRect(px + 3, py + 1, 1, 1);
-		ctx.fillRect(px + 2, py + 2, 1, 1);
-		ctx.fillRect(px + 1, py + 3, 1, 1);
-	} else if (c === ">") {
-		ctx.fillRect(px + 2, py + 1, 1, 1);
-		ctx.fillRect(px + 3, py + 2, 1, 1);
-		ctx.fillRect(px + 2, py + 3, 1, 1);
-	} else if (c === "V") {
-		ctx.fillRect(px + 1, py + 2, 1, 1);
-		ctx.fillRect(px + 2, py + 3, 1, 1);
-		ctx.fillRect(px + 3, py + 2, 1, 1);
-	} else if (c === "<") {
-		ctx.fillRect(px + 2, py + 1, 1, 1);
-		ctx.fillRect(px + 1, py + 2, 1, 1);
-		ctx.fillRect(px + 2, py + 3, 1, 1);
-	} else if (c === "^") {
-		ctx.fillRect(px + 1, py + 2, 1, 1);
-		ctx.fillRect(px + 2, py + 1, 1, 1);
-		ctx.fillRect(px + 3, py + 2, 1, 1);
-	} else if (c !== " ") {
-		ctx.fillRect(px + 1, py + 1, 3, 3);
-		ctx.fillStyle = bg;
-		ctx.fillRect(px + 2, py + 2, 1, 1);
-	}
-}
-
-
-
