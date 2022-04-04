@@ -18,6 +18,13 @@ V
  V 
 >/<
 
+A square-shaped outline of state 4 will deflect in all directions (as output commands do)
+State 2 on its own will stay still, so it can be activated by the manual addition of state 1
+For example:
+x = 13, y = 13, rule = BackFlip5S
+6.B5$5.3D$B4.D.D4.B$5.3D5$6.B!
+
+
 
 @TABLE
 n_states:6
@@ -28,6 +35,9 @@ var a = {0,1,2,3,4,5}
 var b = {3, 4}
 var c = {2, 3, 4}
 var d = {x, 2}
+var xs = {x}
+var xt = {x}
+var xu = {x}
 var xv = {x}
 var xw = {x}
 var xx = {x}
@@ -53,6 +63,12 @@ var ca = {c}
 var cb = {c}
 var da = {d}
 var db = {d}
+#static state 2
+2,xs,xt,xu,xv,xw,xx,xy,xz,2
+#full deflectors
+4,1,xx,4,4,xy,4,4,xz,1
+1,2,xx,4,4,xy,4,4,xz,1
+2,1,xx,4,4,xy,4,4,xz,4
 #mirrors
 0,ba,xw,bb,xx,1,xy,bc,xz,1
 4,xv,ba,xw,bb,1,bc,xx,bd,1
