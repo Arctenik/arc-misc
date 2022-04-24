@@ -32,6 +32,7 @@ programInp.addEventListener("change", () => {
 		});
 		programInp.value = "";
 		frameIndexElem.textContent = program.frame;
+		outputElem.innerHTML = "";
 		program.render(ctx, parseFloat(scaleInp.value));
 	}
 });
