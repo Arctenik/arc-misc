@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>BackFlip device analyzer</title>
+		
+		<meta name="viewport" content="width=device-width">
+		
+		<link rel="icon" href="../icon.png">
+		
+		<link rel="stylesheet" href="../style.css">
+		
+		<style>
+			
+			input[type=number] {
+				width: 3em;
+			}
+			
+			input[type=text] {
+				width: 10em;
+			}
+			
+			canvas {
+				image-rendering: pixelated;
+			}
+			
+			table {
+				border: 1px solid #aaa;
+				border-collapse: collapse;
+			}
+			
+			th {
+				background: #f5f5f5;
+			}
+			
+			th, td {
+				padding: 0.25em;
+			}
+			
+			td {
+				cursor: default;
+			}
+			
+			td:hover {
+				background: #fafafa;
+			}
+			
+			td.selected {
+				background: #edf;
+			}
+			
+			td.selected:hover {
+				background: #dbf;
+			}
+			
+			.normalWeight {
+				font-weight: normal;
+			}
+			
+			
+			
+			.node rect, .cluster rect {
+				stroke: black;
+				fill: white;
+			}
+
+			.edgePath path {
+				stroke: black;
+			}
+		
+		</style>
+		
+		
+		<script src="../backflip.js"></script>
+		
+		<script src="../../lib/d3.min.js"></script>
+		<script src="../../lib/dagre-d3.min.js"></script>
+	</head>
+	<body>
+		<div class="parentRef"><a href="../">BackFlip interpreter</a></div>
+		
+		Analyzes BackFlip patterns as "event devices" (like the <a href="https://esolangs.org/wiki/BackFlip#The_ABCDXYZ_storage_device">ABCDXYZ device</a>). A device has various <i>channels</i>, which can theoretically be used as inputs OR to call events. By default, the analyzer inserts every possible channel; channels can be restricted using an outline of non-syntax characters, and can be limited to a single role using inward/outward-facing arrows. (Use the randomization feature for examples).
+		<br><br>
+		The output table shows the device's transitions, based on the current state (rows) and the input channel (columns). A transition consists of a target state and a list of channels called as events. (Currently states are shown as distinct even if they behave equivalently; one consequence of this is that the ABCDXYZ device is shown as having twice as many states as it effectively has.)
+		<br><br>
+		"Show interactions" will add cyan coloring to any characters that the instruction pointer interacts with in any transition. Cells of the table can also be selected, to show information about which character boundaries the instruction pointer crosses for a particular transition; the boundaries are rendered as orange rectangles if the pointer crosses in both directions, and pink arrows if it crosses in a single direction, in various lightnesses depending on how many times the border is crossed.
+		<br><br>
+		Below the table is a graph showing the relationships between the states, with edges labeled by input used and events called. Edges with no events and no state change are omitted.
+		<br><br><br>
+		Paste device below //
+		<button id="randomButton">Random</button>
+		<input id="randomWidthInp" type="number" value="3">
+		x
+		<input id="randomHeightInp" type="number" value="3">
+		w/ <input id="randomChannelsInp" type="number" value="3"> channels
+		(<input id="numInputsInp" type="number" value="0"> input-only,
+		<input id="numOutputsInp" type="number" value="0"> output-only)
+		and weights
+		<input id="randomWeightsInp" type="text" value="1 2 2"> (blank, mirror, arrow)
+		<br><br>
+		<textarea id="codeInp"></textarea>
+		<br><br><br>
+		<canvas id="canvas"></canvas>
+		<br><br>
+		<input id="showInteractionsInp" type="checkbox"> Show interactions
+		<br><br>
+		<div id="tableElem"></div>
+		<br><br>
+		<svg id="svg" xmlns="http://www.w3.org/2000/svg"><g></g></svg>
+		
+		
+		<script src="analyzer.js"></script>
+	</body>
+</html>
+
+

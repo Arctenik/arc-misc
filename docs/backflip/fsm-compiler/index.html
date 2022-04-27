@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>FSM to BackFlip</title>
+		
+		<meta name="viewport" content="width=device-width">
+		
+		<link rel="icon" href="../icon.png">
+		
+		<link rel="stylesheet" href="../style.css">
+		
+		<style>
+			#machineInp {
+				width: 20em;
+				height: 10em;
+			}
+			
+			#inputSepInp:placeholder-shown {
+				font-style: italic;
+			}
+		</style>
+	</head>
+	
+	<body>
+		<div class="parentRef"><a href="../">BackFlip interpreter</a></div>
+		
+		Compiles a finite-state machine (in the same format as for my <a href="https://arctenik.github.io/esolangs/fsm/">FSM simulator</a>) to BackFlip with the output extension. If all of the machine's output strings consist only of digits and line feeds, output is performed literally; otherwise, it's encoded as base ten Unicode values separated by line feeds. Information about how the compiled machine works can be found in <a href="https://github.com/Arctenik/arc-misc/blob/main/docs/backflip/fsm-compiler/fsm-details.txt">this file</a> (and <a href="https://github.com/Arctenik/arc-misc/blob/main/docs/backflip/fsm-compiler/fsm-diagram.png">this image</a> used in the development of the compiler).
+		<br><br><br>
+		Machine definition:
+		<br>
+		<textarea id="machineInp"></textarea>
+		<br><br>
+		Input: <input type="text" id="inputInp">
+		| Separator: <input type="text" id="inputSepInp" placeholder="None">
+		<br><br>
+		<input type="checkbox" id="labelSymbolsInp" checked> Include input symbol names as labels
+		<br><br>
+		<button id="compileButton">Compile</button> <span id="errorElem" class="error"></span>
+		<br><br><br>
+		Result:
+		<br>
+		<textarea id="resultInp"></textarea>
+
+
+		<script src="fsm-compiler.js"></script>
+	</body>
+</html>

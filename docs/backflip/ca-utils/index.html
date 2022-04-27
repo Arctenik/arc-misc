@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>BackFlip cellular automaton</title>
+		
+		<meta name="viewport" content="width=device-width">
+		
+		<link rel="icon" href="../icon.png">
+		
+		<link rel="stylesheet" href="../style.css">
+	</head>
+	<body>
+		<div class="parentRef"><a href="../">BackFlip interpreter</a></div>
+		
+		The utilities on this page can be used to convert BackFlip programs to/from <a href="https://github.com/Arctenik/arc-misc/blob/main/docs/backflip/BackFlip5S.rule">this cellular automaton</a>
+		<br><br><br>
+		Program:
+		<br>
+		<textarea id="programInp"></textarea>
+		<br><br>
+		<button id="toPatternButton">Program to CA</button>
+		| <input type="checkbox" id="includeVerticesInp" checked> Include vertex markers
+		| <input type="checkbox" id="includePointerInp"> Include instruction pointer
+		<br><br>
+		CA pattern (RLE):
+		<br>
+		<textarea id="patternInp"></textarea>
+		<br><br>
+		<button id="toProgramButton">Pattern to program</button> (Requires a grid of symbols spaced with two cells between them)
+
+
+		<script src="ca-utils.js"></script>
+	</body>
+</html>

@@ -5,108 +5,108 @@
 		
 		<meta name="viewport" content="width=device-width">
 		
+		<link rel="icon" href="icon.png">
+		
+		<link rel="stylesheet" href="style.css">
+		
 		<style>
 
-		body, html {
-			margin: 0;
-			padding: 0;
-		}
-
-		body {
-			font-family: Arial, sans-serif;
-		}
-
-		input[type=number] {
-			width: 4em;
-		}
-
-		#page {
-			display: flex;
-			flex-direction: column;
-			margin: 0.5em;
-			width: calc(100vw - 1em);
-			height: calc(100vh - 1em);
-		}
-		
-		#topControlsElem {
-			margin-top: 1.5em;
-			display: flex;
-		}
-		
-		#programInp {
-			margin-top: 0.5em;
-		}
-		
-		#outputPanel {
-			display: flex;
-		}
-		
-		#outputElem {
-			border: 1px solid lightgray;
-			padding: 0.5em;
-			overflow: auto;
-			white-space: pre;
-		}
-		
-		@media all and (orientation: landscape) {
-			#topControlsElem {
-				flex-direction: row;
-				width: 100%;
+			body, html {
+				margin: 0;
+				padding: 0;
 			}
-			
-			#programInputPanel {
-				max-width: 40%;
-				flex: 1;
+
+			input[type=number] {
+				width: 4em;
 			}
-			
-			#outputPanel {
-				flex: 1;
-				max-width: 40em;
+
+			#page {
+				display: flex;
 				flex-direction: column;
+				width: calc(100vw - var(--root-padding-left) - var(--root-padding-right));
+				height: calc(100vh - var(--root-padding-top) - var(--root-padding-bottom));
 			}
 			
-			#outputElem {
+			#topControlsElem {
+				margin-top: 2em;
+				display: flex;
+			}
+			
+			#programInp {
 				margin-top: 0.5em;
-				height: 3em;
-			}
-		}
-		
-		@media all and (orientation: portrait) {
-			#topControlsElem {
-				flex-direction: column;
 			}
 			
 			#outputPanel {
-				margin-top: 1em;
-				align-items: center;
+				display: flex;
 			}
 			
 			#outputElem {
-				flex: 1;
-				margin-left: 0.6em;
-				height: 2.4em;
+				border: 1px solid lightgray;
+				padding: 0.5em;
+				overflow: auto;
+				white-space: pre;
 			}
-		}
-		
-		#controlsBar {
-			margin-top: 1.5em;
-			line-height: 1.5;
-		}
+			
+			@media all and (orientation: landscape) {
+				#topControlsElem {
+					flex-direction: row;
+					width: 100%;
+				}
+				
+				#programInputPanel {
+					max-width: 40%;
+					flex: 1;
+				}
+				
+				#outputPanel {
+					flex: 1;
+					max-width: 40em;
+					flex-direction: column;
+				}
+				
+				#outputElem {
+					margin-top: 0.5em;
+					height: 3em;
+				}
+			}
+			
+			@media all and (orientation: portrait) {
+				#topControlsElem {
+					flex-direction: column;
+				}
+				
+				#outputPanel {
+					margin-top: 1em;
+					align-items: center;
+				}
+				
+				#outputElem {
+					flex: 1;
+					margin-left: 0.6em;
+					height: 2.4em;
+				}
+			}
+			
+			#controlsBar {
+				margin-top: 1.5em;
+				line-height: 1.5;
+			}
 
-		#programContainer {
-			width: 100%;
-			overflow: auto;
-		}
+			#programContainer {
+				width: 100%;
+				min-height: 10em;
+				overflow: auto;
+			}
 
-		#canvas {
-			border: 1px solid #eee;
-			padding: 0.5em;
-			image-rendering: pixelated;
-		}
+			#canvas {
+				border: 1px solid #eee;
+				padding: 0.5em;
+				image-rendering: pixelated;
+			}
 
-		#programContainer {
-			margin-top: 1em;
-		}
+			#programContainer {
+				margin-top: 1em;
+			}
 
 		</style>
 		
@@ -114,9 +114,14 @@
 		<script src="backflip.js"></script>
 	</head>
 	<body>
-		<div id="page">
+		<div id="page" class="root">
+			<div class="parentRef"><a href="https://arctenik.github.io/esolangs/">Esolang stuff</a></div>
+			
 			<div>
-				An interpreter for the esoteric programming language <a href="https://esolangs.org/wiki/BackFlip">BackFlip</a> (including the output extension). Tested on recent versions of Chrome and Firefox. Also of interest may be <a href="https://github.com/Arctenik/arc-misc/blob/main/docs/backflip/BackFlip5S.rule">this cellular automaton rule file</a> and <a href="https://github.com/Arctenik/arc-misc/tree/main/docs/backflip/programs">my BackFlip programs</a>.
+				An interpreter for <a href="https://esolangs.org/wiki/BackFlip">BackFlip</a> (including the output extension)
+				<br><br>
+				Other associated pages that may be of interest:
+				<a href="./ca-utils">BackFlip cellular automaton</a> | <a href="./analyzer">Device analyzer</a> | <a href="./fsm-compiler">FSM to BackFlip</a> | <a href="https://github.com/Arctenik/arc-misc/tree/main/docs/backflip/programs">My BackFlip programs</a>
 			</div>
 			<div id="topControlsElem">
 				<div id="programInputPanel">
@@ -136,7 +141,12 @@
 				Step size: <input id="stepSizeInp" type="number" value="1" min="1"> |
 				Delay: <input id="delayInp" type="number" value="100" min="1"> |
 				Frame: <span id="frameIndexElem">0</span> |
-				Scale: <input id="scaleInp" type="number" value="3">
+				Scale: <input id="scaleInp" type="number" value="3"> |
+				Unknown symbols:
+				<select id="unknownSymbolInp">
+					<option value="ignore">Ignore</option>
+					<option value="rebound">Rebound</option>
+				</select>
 			</div>
 			<div id="programContainer">
 				<canvas id="canvas"></canvas>

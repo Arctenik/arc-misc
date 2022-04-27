@@ -1,0 +1,116 @@
+
+
+The program uses event devices, i.e. patterns that have inputs which may cause a state change and/or call events via outputs, with the caveat that the instruction pointer must return back through the device before it can be used again
+
+The compiled machine consists of a "transition module" on the left, with a tape of input cells extending to the right
+
+The transition module contains a device for storing the machine's state, and an array of devices that filter by input symbol and perform a transition
+
+The fundamental device used for state-storage has only one operation, which is to read the current state and advance to the next state in the list; to work around this, there are toggle devices attached to the outputs of the state device, which are toggled open when the state is read and closed otherwise
+
+The symbol filters consist of sequences of toggle devices, corresponding to the possible input symbols; during a transition, the devices corresponding to the read symbol are toggled open
+
+Each cell contains a device representing the cell's symbol, a device for storing the state change of the transition associated with the input, and a collection of devices for directing the instruction pointer to the current cell during a transition
+
+
+Processing of an input cell proceeds as follows:
+- The pointer enters the cell
+- It's directed into the symbol-representing device, which directs it to the transition module along a path associated with the particular symbol stored in the cell
+- In the filter section of the transition module, the toggle devices associated with the read symbol get turned on
+- The pointer returns to the cell, where it's then directed to the state device in the transition module
+- The state is read, which directs the pointer into the filter associated with the current state
+- The filter directs the pointer to the transition operation associated with the current state and the input symbol
+- The transition operation:
+    - Zero or more values are output
+    - The pointer is directed along a path corresponding to the difference between the current state and the target state
+    - The path takes the pointer through the cells' direction devices, eventually coming to the current cell, where the devices direct the pointer into that cell
+    - The state change is stored in the cell's state change storage device
+- The pointer returns back through the transition module and to the current cell
+- It reads from the state change device, which directs it along a path to the transition module, where it advances the state some number of times (notably, it's advanced one time fewer than the actual state change, since the state already advanced once as a side effect when it was read)
+- The pointer returns to the cell, before being directed via the symbol device to reset the filters in the transition module
+- It then returns to the cell and toggles the direction devices to point to the next cell
+- The pointer exits the current cell to go to the next one
+
+
+Devices used:
+(Shown here surrounded by hash signs with openings for inputs/outputs, which are labeled)
+
+The toggle device used for the state device and the filters, which outputs if toggled on:
+
+ in-. .-toggle
+    | |
+  ## # ####
+  #  VVV  #
+  # >//\< #
+  # >\ /< #
+  #  ^ ^  #
+  #   >V  #
+  #  >\<  #
+  #### ####
+      |
+     out
+
+Input symbol representation - in a cycle of arrows, one corresponding to the symbol is pointed outward; for example, with two symbols representing bits (with 1 being the value stored in this case, and the two inputs being functionally interchangeable):
+
+          out
+          | |
+      #### # ####
+      # V     < #
+ inA-   > > ^ ^   -inB
+      #   0 1   #
+      ###########
+
+The state change storage consists of a series of devices that alternate between to outputs on successive calls (again, the inputs all do the same thing):
+
+       outB
+        |
+      ## ####
+ inA-    V< #
+      # ^ /   -outA
+ inB-    >^ #
+      ### ###
+         |
+        inC
+
+Chained together, these alternators create a device that can be written to once and then read from once; for example, with three possible values for the stored state difference:
+
+         .--read out-.
+         |     |     |
+       ## ##### ##### #####
+       #        V<        #
+ read-    V<   ^ /    V<  #
+       # ^ /    >^   ^ /< #
+       #  >^          >^  #
+       ### ##### ##### ####
+          |     |     |
+          '---write---'
+
+One of the individual devices for directing to the cell, which has one input and can be toggled between two outputs:
+
+  toggle-. .-outA
+         | |
+     #### # ###
+     #    >\< #
+     #    ^<  #
+     #  VV V  #
+     # >// \< #
+     #   >  V #
+ in-   ^ ^  /   -outB
+     #      ^ #
+     # >\ \/< #
+     #  ^ ^^  #
+     ##########
+
+State storage is based on this device (with three possible states in this example), though in an actual compiled machine it's stretched out to line up with the filters:
+
+    in
+     |
+ #### #########
+ #  VV < < V  #
+ # >/\\/\/\\< #
+ # >\      /< #
+ #  ^      ^  #
+ ##### # # ####
+      | | |
+	  out-'
+

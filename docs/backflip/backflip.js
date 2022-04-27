@@ -1,6 +1,7 @@
 (function(cb) {
 	
-	let transitionsSideA = [
+	let paddingSym = Symbol("padding"),
+		transitionsSideA = [
 			["right", "r"], ["right", "d"], ["right", "l"], ["right", "u"], ["right", "ru"], ["right", "rd"],
 			["down", "r"],  ["down", "d"],  ["down", "l"],  ["down", "u"],  ["down", "ru"],  ["down", "rd"],
 			["left", "r"],  ["left", "d"],  ["left", "l"],  ["left", "u"],  ["left", "ru"],  ["left", "rd"],
@@ -27,6 +28,7 @@
 			backSize: 1,
 			stepSize: 1,
 			delay: 100,
+			padding: 0, // can also be an array, in a format modeled after the CSS "padding" property
 			fgColor: "black",
 			bgColor: "white",
 			widthMode: "error", // "error", "truncate", "pad"
@@ -161,6 +163,23 @@
 	}
 	
 	BackFlip.prototype = {
+		set padding(padding) {
+			if (!(Array.isArray(padding) && padding.length >= 4)) {
+				if (Array.isArray(padding)) {
+					if (padding.length === 1) padding = (new Array(4)).fill(padding[0]);
+					else if (padding.length === 2) padding = [padding[0], padding[1], padding[0], padding[1]];
+					else if (padding.length === 3) padding = [padding[0], padding[1], padding[2], padding[1]];
+					else padding = [0, 0, 0, 0];
+				} else {
+					padding = (new Array(4)).fill(padding);
+				}
+			}
+			this[paddingSym] = padding;
+		},
+		get padding() {
+			return this[paddingSym];
+		},
+		
 		getText() {
 			return this.program.map(l => l.join("")).join("\n");
 		},
@@ -332,18 +351,20 @@
 			if (this.y >= this.program.length) return stepDir > 0 ? this.dir === "up" : this.dir === "down";
 		},
 		render(ctx, scale) {
-			ctx.canvas.width = this.program[0].length * 5;
-			ctx.canvas.height = this.program.length * 5;
+			ctx.canvas.width = this.program[0].length * 5 + this.padding[1] + this.padding[3];
+			ctx.canvas.height = this.program.length * 5 + this.padding[0] + this.padding[2];
 			if (scale !== undefined) {
 				ctx.canvas.style.width = (ctx.canvas.width * scale) + "px";
 			}
+			ctx.fillStyle = this.bgColor;
+			ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 			for (let y = 0; y < this.program.length; y++) {
 				for (let x = 0; x < this.program[0].length; x++) {
 					this.renderPos(ctx, x, y);
 				}
 			}
 		},
-		renderPos(ctx, x, y) {
+		renderPos(ctx, x, y, {color: fg = this.fgColor, edges = true} = {}) {
 			if (y === undefined) {
 				let v = x;
 				x = v%this.program[0].length;
@@ -351,35 +372,49 @@
 			}
 			if (this.inProgram(x, y)) {
 				let glyph = this.font[this.program[y][x]] || this.font[".."],
-					rx = x * 5,
-					ry = y * 5;
+					rx = x * 5 + this.padding[3],
+					ry = y * 5 + this.padding[0];
 				
-				ctx.clearRect(rx, ry, 5, 5);
+				if (edges) {
+					ctx.clearRect(rx, ry, 5, 5);
+				} else {
+					ctx.clearRect(rx + 1, ry + 1, 3, 3);
+				}
 				
 				let inverse = false;
 				
 				if (this.x === x && this.y === y) {
 					inverse = true;
-					ctx.fillStyle = this.fgColor;
-					ctx.fillRect(rx + 1, ry, 3, 1);
-					ctx.fillRect(rx + 1, ry + 4, 3, 1);
-					ctx.fillRect(rx, ry + 1, 1, 3);
-					ctx.fillRect(rx + 4, ry + 1, 1, 3);
-					ctx.fillStyle = this.bgColor;
-					ctx.fillStyle = (this.dir === "left" || this.dir === "up") ? this.fgColor : this.bgColor;
-					ctx.fillRect(rx + 4, ry + 4, 1, 1);
-					ctx.fillStyle = (this.dir === "right" || this.dir === "up") ? this.fgColor : this.bgColor;
-					ctx.fillRect(rx, ry + 4, 1, 1);
-					ctx.fillStyle = (this.dir === "right" || this.dir === "down") ? this.fgColor : this.bgColor;
-					ctx.fillRect(rx, ry, 1, 1);
-					ctx.fillStyle = (this.dir === "left" || this.dir === "down") ? this.fgColor : this.bgColor;
-					ctx.fillRect(rx + 4, ry, 1, 1);
+					if (edges) {
+						ctx.fillStyle = fg;
+						ctx.fillRect(rx + 1, ry, 3, 1);
+						ctx.fillRect(rx + 1, ry + 4, 3, 1);
+						ctx.fillRect(rx, ry + 1, 1, 3);
+						ctx.fillRect(rx + 4, ry + 1, 1, 3);
+						ctx.fillStyle = this.bgColor;
+						ctx.fillStyle = (this.dir === "left" || this.dir === "up") ? fg : this.bgColor;
+						ctx.fillRect(rx + 4, ry + 4, 1, 1);
+						ctx.fillStyle = (this.dir === "right" || this.dir === "up") ? fg : this.bgColor;
+						ctx.fillRect(rx, ry + 4, 1, 1);
+						ctx.fillStyle = (this.dir === "right" || this.dir === "down") ? fg : this.bgColor;
+						ctx.fillRect(rx, ry, 1, 1);
+						ctx.fillStyle = (this.dir === "left" || this.dir === "down") ? fg : this.bgColor;
+						ctx.fillRect(rx + 4, ry, 1, 1);
+					}
+				} else {
+					if (edges) {
+						ctx.fillStyle = this.bgColor;
+						ctx.fillRect(rx, ry, 5, 1);
+						ctx.fillRect(rx, ry + 4, 5, 1);
+						ctx.fillRect(rx, ry + 1, 1, 3);
+						ctx.fillRect(rx + 4, ry + 1, 1, 3);
+					}
 				}
 				
 				for (let py = 0; py < 3; py++) {
 					for (let px = 0; px < 3; px++) {
 						if ((glyph[py * 3 + px] !== " ") ^ inverse) {
-							ctx.fillStyle = this.fgColor;
+							ctx.fillStyle = fg;
 						} else {
 							ctx.fillStyle = this.bgColor;
 						}

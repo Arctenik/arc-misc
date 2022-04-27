@@ -11,6 +11,7 @@ let programInp = document.getElementById("programInp"),
 	delayInp = document.getElementById("delayInp"),
 	frameIndexElem = document.getElementById("frameIndexElem"),
 	scaleInp = document.getElementById("scaleInp"),
+	unknownSymbolInp = document.getElementById("unknownSymbolInp"),
 	ctx = document.getElementById("canvas").getContext("2d");
 
 let program;
@@ -22,6 +23,7 @@ programInp.addEventListener("change", () => {
 			backSize: parseInt(backAmountInp.value),
 			stepSize: parseInt(stepSizeInp.value),
 			delay: parseFloat(delayInp.value),
+			unknownSymbolMode: unknownSymbolInp.value,
 			output(s) {
 				outputElem.insertAdjacentText("beforeend", s);
 			},
@@ -83,5 +85,9 @@ delayInp.addEventListener("change", () => {
 
 scaleInp.addEventListener("change", () => {
 	ctx.canvas.style.width = (ctx.canvas.width * scaleInp.value) + "px";
+});
+
+unknownSymbolInp.addEventListener("change", () => {
+	if (program) program.unknownSymbolMode = unknownSymbolInp.value;
 });
 
