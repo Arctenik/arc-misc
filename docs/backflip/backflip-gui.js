@@ -18,24 +18,29 @@ let program;
 
 
 programInp.addEventListener("change", () => {
-	if (programInp.value) {
-		program = new BackFlip(programInp.value, {
-			backSize: parseInt(backAmountInp.value),
-			stepSize: parseInt(stepSizeInp.value),
-			delay: parseFloat(delayInp.value),
-			unknownSymbolMode: unknownSymbolInp.value,
-			output(s) {
-				outputElem.insertAdjacentText("beforeend", s);
-			},
-			unoutput(s) {
-				let c = outputElem.textContent;
-				outputElem.textContent = c.substring(0, c.length - s.length);
-			}
-		});
-		programInp.value = "";
-		frameIndexElem.textContent = program.frame;
-		outputElem.innerHTML = "";
-		program.render(ctx, parseFloat(scaleInp.value));
+	try {
+		if (programInp.value) {
+			program = new BackFlip(programInp.value, {
+				backSize: parseInt(backAmountInp.value),
+				stepSize: parseInt(stepSizeInp.value),
+				delay: parseFloat(delayInp.value),
+				unknownSymbolMode: unknownSymbolInp.value,
+				output(s) {
+					outputElem.insertAdjacentText("beforeend", s);
+				},
+				unoutput(s) {
+					let c = outputElem.textContent;
+					outputElem.textContent = c.substring(0, c.length - s.length);
+				}
+			});
+			programInp.value = "";
+			frameIndexElem.textContent = program.frame;
+			outputElem.innerHTML = "";
+			program.render(ctx, parseFloat(scaleInp.value));
+		}
+	} catch(e) {
+		programInp.value = e;
+		programInp.scrollTop = 0;
 	}
 });
 
